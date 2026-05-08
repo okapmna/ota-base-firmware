@@ -1,5 +1,9 @@
 # OTA Base Firmware
 
+[English Version](README_en.md) | [Bahasa Indonesia](README.md)
+
+---
+
 This project is a base system for ESP32 that supports OTA (Over-The-Air) updates with the help of the MQTT protocol to receive remote update commands.
 
 ## Setup Instructions for Manual Firmware Upload
