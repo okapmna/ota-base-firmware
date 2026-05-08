@@ -1,0 +1,62 @@
+name: Build ESP32 .bin
+
+on:
+  push:
+    branches: [ releases, master ]
+  pull_request:
+    branches: [ releases, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install arduino-cli
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
+          echo "${PWD}/bin" >> $GITHUB_PATH
+
+      - name: Configure arduino-cli for ESP32
+        run: |
+          arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          arduino-cli core install esp32:esp32 --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+
+      - name: Install Libraries
+        run: |
+          arduino-cli lib install "PubSubClient"
+          arduino-cli lib install "ArduinoJson"
+
+      - name: Compile Sketch
+        run: |
+          mkdir -p build
+          
+          # Cek secret.h, jika tidak ada gunakan example
+          if [ ! -f secret.h ]; then
+            cp secret.h.example secret.h
+          fi
+          
+          arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir build ./
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: serialread-esp32-bin
+          path: build/*.bin
+
+      - name: Send .bin to API
+        env:
+          OTA_API_KEY: ${{ secrets.OTA_API_KEY }}
+          OTA_UPLOAD_URL: ${{ secrets.OTA_UPLOAD_URL }}
+        run: |
+          BIN_FILE=$(ls build/*.bin | head -n 1)
+          # Ambil versi dari esp32-sim-smartlamp.ino secara otomatis
+          VERSION=$(grep "current_version =" esp32-sim-smartlamp.ino | cut -d '"' -f 2)
+          
+          curl -X POST $OTA_UPLOAD_URL \
+               -F "firmware=@$BIN_FILE" \
+               -F "version=$VERSION" \
+               -F "device_type=esp32-smartlamp" \
+               -H "x-api-key: $OTA_API_KEY"
