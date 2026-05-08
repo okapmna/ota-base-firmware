@@ -52,8 +52,8 @@ jobs:
           OTA_UPLOAD_URL: ${{ secrets.OTA_UPLOAD_URL }}
         run: |
           BIN_FILE=$(ls build/*.bin | head -n 1)
-          # Ambil versi dari esp32-sim-smartlamp.ino secara otomatis
-          VERSION=$(grep "current_version =" esp32-sim-smartlamp.ino | cut -d '"' -f 2)
+          # Ambil versi dari ota-base-firmware.ino secara otomatis
+          VERSION=$(grep "current_version =" ota-base-firmware.ino | cut -d '"' -f 2)
           
           curl -X POST $OTA_UPLOAD_URL \
                -F "firmware=@$BIN_FILE" \
